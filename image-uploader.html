@@ -1,5 +1,6 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 <link rel="import" href="bower_components/marked-element/marked-element.html">
+
 <script src="exif-js/exif.js"></script>
 
 <polymer-element name="image-uploader" attributes="multiple accept">
@@ -11,6 +12,8 @@
     figure { max-width: 400px; }
     figure img { max-width: 100%; border: 1px solid #aaa; margin: 10px 0; }
     tr td:first-of-type { max-width: 420px; }
+    .reorder { cursor: pointer; opacity: 0.25; }
+    .reorder:hover { opacity: 1; }
     </style>
 
     <form>
@@ -40,10 +43,17 @@
           </thead>
           <tbody>
           <template repeat="{{ file, i in files }}">
-            <tr>
+            <tr id="file-{{ i }}">
               <td>
                 <figure>
-                  <h2>Figure {{ i + 1 }}</h2>
+                  <h2 data-index="{{ i }}">Figure {{ i + 1 }}
+                    <template if="{{ i > 0 }}">
+                      <span class="reorder" on-click="{{ moveUp }}">&uarr;</span>
+                    </template>
+                    <template if="{{ i < files.length }}">
+                      <span class="reorder" on-click="{{ moveDown }}">&darr;</span>
+                    </template>
+                  </h2>
                   <template if="{{ file.url }}">
                     <img src="{{ file.url }}" on-load="{{ imageLoaded }}" data-index="{{ i }}">
                   </template>
@@ -124,14 +134,29 @@
       }
     },
     imageLoaded: function(event, details, target) {
-      var file = this.files[target.getAttribute('data-index')];
+      var index = target.getAttribute('data-index');
+      var file = this.files[index];
 
       file.width = target.naturalWidth;
       file.height = target.naturalHeight;
 
+      /*
       EXIF.getData(target, function() {
           file.exif = EXIF.pretty(this);
       });
+      */
+    },
+    move: function(fromIndex, toIndex) {
+      var spliced = this.files.splice(fromIndex, 1);
+      this.files.splice(toIndex, 0, spliced[0]);
+    },
+    moveUp: function(event, details, target) {
+      var index = Number(target.parentNode.getAttribute('data-index'));
+      this.move(index, index - 1);
+    },
+    moveDown: function(event, details, target) {
+      var index = Number(target.parentNode.getAttribute('data-index'));
+      this.move(index, index + 1);
     }
   })
   </script>
