@@ -1,0 +1,17 @@
+{
+  "name": "image-upload",
+  "version": "0.0.0",
+  "authors": [
+    "Alf Eaton <hubgit@@users.noreply.github.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.2.0",
+    "marked-element": "hubgit/marked-element"
+  }
+}
