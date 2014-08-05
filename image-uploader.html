@@ -1,0 +1,138 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/marked-element/marked-element.html">
+<script src="exif-js/exif.js"></script>
+
+<polymer-element name="image-uploader" attributes="multiple accept">
+  <template>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css">
+
+    <style>
+    :host { display: block; font-family: sans-serif; }
+    figure { max-width: 400px; max-height: 400px; }
+    figure img { max-width: 100%; border: 1px solid #aaa; margin: 10px 0; }
+    tr td:first-of-type { max-width: 420px; }
+    </style>
+
+    <form>
+      <div class="form-group">
+        <label for="files-input">Figures</label>
+        <input id="files-input"
+          type="file"
+          multiple="{{ multiple }}"
+          accept="{{ accept }}"
+          on-change="{{ validateFiles }}">
+          <p class="help-block">Choose one or more figure files.</p>
+          <p class="help-block">Vector images: upload as EPS or PDF.</p>
+          <p class="help-block">Bitmap images: if the source image was JPEG then upload the source image, otherwise upload PNG. Must be at least 3000px wide.</p>
+          <p class="help-block">Maximum file size is 50MB.</p>
+      </div>
+    </form>
+
+    <div id="files">
+      <template if="{{ files.length }}">
+        <table class="table table-bordered">
+          <thead>
+          <tr>
+            <th>Image</th>
+            <th>Details</th>
+            <th>Metadata</th>
+          </tr>
+          </thead>
+          <tbody>
+          <template repeat="{{ file, i in files }}">
+            <tr>
+              <td>
+                <figure>
+                  <h2>Figure {{ i + 1 }}</h2>
+                  <template if="{{ file.url }}">
+                    <img src="{{ file.url }}" on-load="{{ imageLoaded }}" data-index="{{ i }}">
+                  </template>
+                  <template if="{{ !file.url }}">
+                    <code>{{ file.name }}</code>
+                  </template>
+                  <figcaption>
+                    <b><marked-element text="{{ file.title }}"></marked-element></b>
+                    <marked-element text="{{ file.caption }}"></marked-element>
+                  </figcaption>
+                </figure>
+              </td>
+              <td>
+
+              <div class="form-group">
+                  <label>Title</label>
+                  <input
+                    class="form-control"
+                    type="text"
+                    placeholder="Enter the figure title…"
+                    value="{{ file.title }}">
+               </div>
+
+               <div class="form-group">
+                  <label>Caption</label>
+                  <textarea
+                    class="form-control"
+                    rows="10"
+                    placeholder="Enter the figure caption…"
+                    value="{{ file.caption }}"></textarea>
+               </div>
+              </td>
+              <td>
+                <dl>
+                  <dt>Size (KB)</dt>
+                  <dd>{{ file.size }}</dd>
+                  <dt>Name</dt>
+                  <dd>{{ file.name }}</dd>
+                  <dt>Type</dt>
+                  <dd>{{ file.type }}</dd>
+                  <dt>Modified</dt>
+                  <dd>{{ file.modified }}</dd>
+                  <dt>Width (px)</dt>
+                  <dd class="{{ { 'text-danger': file.width < 3000 } | tokenList }}">{{ file.width }}</dd>
+                  <dt>Height (px)</dt>
+                  <dd>{{ file.height }}</dd>
+                </dl>
+                <div>{{ file.exif }}</div>
+              </td>
+            </tr>
+          </template>
+          </tbody>
+        </table>
+      </template>
+    </div>
+  </template>
+
+  <script>
+  Polymer({
+    multiple: true,
+    accept: 'image/*',
+    ready: function() {
+      this.files = [];
+    },
+    validateFiles: function(event, details, target) {
+      this.files = Array.prototype.map.call(target.files, this.buildFile.bind(this));
+    },
+    buildFile: function(file) {
+      var imageFile = file.type.match(/^image\//);
+
+      return {
+        name: file.name,
+        size: Math.round(file.size / 1024),
+        type: file.type,
+        url: imageFile ? window.URL.createObjectURL(file) : null,
+        modified: (new Date(file.lastModifiedDate)).toLocaleDateString(),
+        exif: null,
+      }
+    },
+    imageLoaded: function(event, details, target) {
+      var file = this.files[target.getAttribute('data-index')];
+
+      file.width = target.naturalWidth;
+      file.height = target.naturalHeight;
+
+      EXIF.getData(target, function() {
+          file.exif = EXIF.pretty(this);
+      });
+    }
+  })
+  </script>
+</polymer-element>
